@@ -102,21 +102,19 @@ def run_colmap(image_dir, workspace_dir, colmap_path):
     sparse_dir = workspace_dir / "sparse"
     sparse_dir.mkdir(parents=True, exist_ok=True)
 
-    # Feature extraction
+    # Feature extraction (COLMAP CUDA version will auto-use GPU)
     run_command([
         colmap_path, "feature_extractor",
         "--database_path", str(database_path),
         "--image_path", str(image_dir),
         "--ImageReader.single_camera", "1",
-        "--ImageReader.camera_model", "OPENCV",
-        "--SiftExtraction.use_gpu", "1"
+        "--ImageReader.camera_model", "OPENCV"
     ])
 
-    # Feature matching
+    # Feature matching (COLMAP CUDA version will auto-use GPU)
     run_command([
         colmap_path, "exhaustive_matcher",
-        "--database_path", str(database_path),
-        "--SiftMatching.use_gpu", "1"
+        "--database_path", str(database_path)
     ])
 
     # Sparse reconstruction
