@@ -26,6 +26,44 @@ COLMAP_PATH = r"C:\Users\Optimum\Documents\colmap-x64-windows-cuda\bin\COLMAP.ex
 # ============================================================================
 
 
+def setup_cuda_home():
+    """Detect and set CUDA_HOME if not already set"""
+    if os.environ.get('CUDA_HOME'):
+        print(f"CUDA_HOME already set: {os.environ['CUDA_HOME']}")
+        return True
+
+    # Try to auto-detect CUDA on Windows
+    if sys.platform == 'win32':
+        cuda_base = Path(r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA")
+        if cuda_base.exists():
+            # Find the latest CUDA version
+            cuda_versions = sorted([d for d in cuda_base.iterdir() if d.is_dir()], reverse=True)
+            if cuda_versions:
+                cuda_home = str(cuda_versions[0])
+                os.environ['CUDA_HOME'] = cuda_home
+                print(f"Auto-detected CUDA_HOME: {cuda_home}")
+                return True
+
+    # Try nvcc to find CUDA
+    try:
+        result = subprocess.run(['nvcc', '--version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            # nvcc found, try to get CUDA path
+            nvcc_path = shutil.which('nvcc')
+            if nvcc_path:
+                cuda_home = str(Path(nvcc_path).parent.parent)
+                os.environ['CUDA_HOME'] = cuda_home
+                print(f"Detected CUDA_HOME from nvcc: {cuda_home}")
+                return True
+    except:
+        pass
+
+    print("WARNING: CUDA_HOME not set and could not auto-detect CUDA installation")
+    print("Please set CUDA_HOME environment variable to your CUDA installation path")
+    print("Example: C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8")
+    return False
+
+
 def run_command(cmd, cwd=None, check=True):
     """Run a shell command and print output"""
     print(f"\n{'='*60}")
@@ -287,18 +325,23 @@ def main():
 
         run_colmap(colmap_images, colmap_workspace, COLMAP_PATH)
 
-        # Step 3: Setup Gaussian Splatting
+        # Step 3: Setup CUDA environment
+        if not setup_cuda_home():
+            print("\nWARNING: Proceeding without CUDA_HOME - build may fail")
+            print("If you get CUDA errors, please set CUDA_HOME environment variable")
+
+        # Step 4: Setup Gaussian Splatting
         gs_dir = setup_gaussian_splatting()
 
-        # Step 4: Prepare data
+        # Step 5: Prepare data
         gs_input_dir = workspace / "gaussian_splatting_input"
         prepare_colmap_data_for_gaussian_splatting(colmap_workspace, gs_input_dir)
 
-        # Step 5: Train
+        # Step 6: Train
         gs_output_dir = workspace / "gaussian_splatting_output"
         final_ply = train_gaussian_splat(gs_dir, gs_input_dir, gs_output_dir, args.iterations)
 
-        # Step 6: Copy output
+        # Step 7: Copy output
         output_path = Path(args.output)
         shutil.copy(final_ply, output_path)
 
