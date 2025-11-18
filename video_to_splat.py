@@ -36,14 +36,23 @@ def run_command(cmd, cwd=None, check=True):
         cmd,
         cwd=cwd,
         shell=isinstance(cmd, str),
-        check=check,
+        check=False,  # Don't raise immediately
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.PIPE,
         text=True
     )
 
+    # Always print output
     if result.stdout:
         print(result.stdout)
+    if result.stderr:
+        print("STDERR:", result.stderr)
+
+    # Now check if we should raise
+    if check and result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode, cmd, result.stdout, result.stderr
+        )
 
     return result
 
