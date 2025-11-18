@@ -17,6 +17,14 @@ import cv2
 from pathlib import Path
 import argparse
 
+# ============================================================================
+# CONFIGURATION - Set your COLMAP path here
+# ============================================================================
+# Windows example: r"C:\Users\Optimum\Documents\colmap-x64-windows-cuda\bin\COLMAP.exe"
+# Linux example: "colmap" (if in PATH)
+COLMAP_PATH = r"C:\Users\Optimum\Documents\colmap-x64-windows-cuda\bin\COLMAP.exe"
+# ============================================================================
+
 
 def run_command(cmd, cwd=None, check=True):
     """Run a shell command and print output"""
@@ -76,7 +84,7 @@ def extract_frames(video_path, output_dir, fps=2):
     return saved_count
 
 
-def run_colmap(image_dir, workspace_dir):
+def run_colmap(image_dir, workspace_dir, colmap_path):
     """Run COLMAP to get camera poses"""
     print("\nRunning COLMAP for camera pose estimation...")
 
@@ -87,7 +95,7 @@ def run_colmap(image_dir, workspace_dir):
 
     # Feature extraction
     run_command([
-        "colmap", "feature_extractor",
+        colmap_path, "feature_extractor",
         "--database_path", str(database_path),
         "--image_path", str(image_dir),
         "--ImageReader.single_camera", "1",
@@ -97,14 +105,14 @@ def run_colmap(image_dir, workspace_dir):
 
     # Feature matching
     run_command([
-        "colmap", "exhaustive_matcher",
+        colmap_path, "exhaustive_matcher",
         "--database_path", str(database_path),
         "--SiftMatching.use_gpu", "1"
     ])
 
     # Sparse reconstruction
     run_command([
-        "colmap", "mapper",
+        colmap_path, "mapper",
         "--database_path", str(database_path),
         "--image_path", str(image_dir),
         "--output_path", str(sparse_dir)
@@ -116,7 +124,7 @@ def run_colmap(image_dir, workspace_dir):
         raise RuntimeError("COLMAP reconstruction failed - no model generated")
 
     run_command([
-        "colmap", "model_converter",
+        colmap_path, "model_converter",
         "--input_path", str(model_dir),
         "--output_path", str(model_dir),
         "--output_type", "TXT"
@@ -233,13 +241,14 @@ def main():
         print(f"Error: Video file not found: {args.video}")
         sys.exit(1)
 
-    # Check if COLMAP is installed
-    try:
-        subprocess.run(["colmap", "-h"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("Error: COLMAP is not installed or not in PATH")
-        print("Please install COLMAP: https://colmap.github.io/install.html")
+    # Check if COLMAP path is valid
+    if not os.path.exists(COLMAP_PATH):
+        print(f"Error: COLMAP not found at: {COLMAP_PATH}")
+        print("Please set COLMAP_PATH at the top of this script to your COLMAP executable")
+        print("Example: COLMAP_PATH = r'C:\\path\\to\\COLMAP.exe'")
         sys.exit(1)
+
+    print(f"Using COLMAP: {COLMAP_PATH}")
 
     workspace = Path(args.workspace)
     workspace.mkdir(parents=True, exist_ok=True)
@@ -262,7 +271,7 @@ def main():
             shutil.rmtree(colmap_images)
         shutil.copytree(images_dir, colmap_images)
 
-        run_colmap(colmap_images, colmap_workspace)
+        run_colmap(colmap_images, colmap_workspace, COLMAP_PATH)
 
         # Step 3: Setup Gaussian Splatting
         gs_dir = setup_gaussian_splatting()

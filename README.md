@@ -6,31 +6,57 @@ Simple, reliable tool to convert videos into Gaussian Splat .ply files.
 
 ## Requirements
 
-- Linux (Ubuntu/Debian recommended)
+- Windows or Linux
 - NVIDIA GPU with CUDA (tested on RTX 3070)
 - Python 3.8+
-- COLMAP
+- COLMAP installed
 - 8GB+ GPU VRAM recommended
 
-## Quick Start
+## Setup
 
-### 1. Install Dependencies
+### 1. Install COLMAP
 
-```bash
-chmod +x setup.sh
-./setup.sh
-```
+**Windows:**
+- Download COLMAP from: https://github.com/colmap/colmap/releases
+- Extract to a folder (e.g., `C:\Users\YourName\Documents\colmap-x64-windows-cuda`)
 
-This will:
-- Install Python dependencies
-- Install COLMAP (if not present)
-- Verify CUDA setup
-
-**Note:** If automatic COLMAP installation fails, install manually:
-- Ubuntu: `sudo apt install colmap`
+**Linux:**
+- Ubuntu/Debian: `sudo apt install colmap`
 - Or build from source: https://colmap.github.io/install.html
 
-### 2. Process Your Video
+### 2. Configure COLMAP Path
+
+Open `video_to_splat.py` and set your COLMAP path at the top:
+
+```python
+# Windows example
+COLMAP_PATH = r"C:\Users\Optimum\Documents\colmap-x64-windows-cuda\bin\COLMAP.exe"
+
+# Linux example
+COLMAP_PATH = "colmap"  # if colmap is in PATH
+```
+
+### 3. Install Python Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+This installs:
+- PyTorch (with CUDA support)
+- OpenCV
+- NumPy, Pillow, etc.
+
+**Note:** If you need a specific CUDA version for PyTorch:
+```bash
+# For CUDA 11.8
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+
+# For CUDA 12.1
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+```
+
+## Quick Start
 
 ```bash
 python video_to_splat.py your_video.mp4
@@ -80,25 +106,31 @@ You can view the generated .ply file using:
 
 ## Troubleshooting
 
+**COLMAP path error:**
+- Make sure `COLMAP_PATH` points to the correct COLMAP executable
+- Windows: Should end with `COLMAP.exe`
+- Linux: Usually just `"colmap"`
+- Use raw strings for Windows paths: `r"C:\path\to\COLMAP.exe"`
+
 **COLMAP fails:**
 - Make sure your video has enough texture/features
 - Try a shorter video clip
 - Ensure good camera movement (not too fast)
 
 **Out of memory:**
-- Reduce --fps to extract fewer frames
+- Reduce `--fps` to extract fewer frames
 - Use a shorter video
-- Reduce --iterations
+- Reduce `--iterations`
 
 **Poor quality results:**
-- Increase --fps for more frames
-- Increase --iterations for more training
+- Increase `--fps` for more frames
+- Increase `--iterations` for more training
 - Ensure good video quality and camera movement
 
 **CUDA errors:**
 - Verify CUDA installation: `nvcc --version`
 - Check PyTorch CUDA: `python -c "import torch; print(torch.cuda.is_available())"`
-- May need to reinstall PyTorch with CUDA: `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118`
+- Reinstall PyTorch with correct CUDA version (see Setup section)
 
 ## How It Works
 
@@ -106,6 +138,12 @@ You can view the generated .ply file using:
 2. **COLMAP:** Estimates camera poses using structure-from-motion
 3. **Gaussian Splatting:** Uses the original Inria implementation to train
 4. **Output:** Generates .ply point cloud file
+
+## Configuration Variables
+
+You can modify these at the top of `video_to_splat.py`:
+
+- `COLMAP_PATH`: Path to your COLMAP executable (required)
 
 ## License
 
