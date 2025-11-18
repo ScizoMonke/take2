@@ -154,21 +154,28 @@ def setup_gaussian_splatting():
 
         print("\nInstalling gaussian-splatting dependencies...")
         run_command(["pip", "install", "-r", "requirements.txt"], cwd=gs_dir)
-
-        # Install submodules
-        submodules_dir = gs_dir / "submodules"
-
-        # diff-gaussian-rasterization
-        diff_gauss = submodules_dir / "diff-gaussian-rasterization"
-        if diff_gauss.exists():
-            run_command(["pip", "install", "."], cwd=diff_gauss)
-
-        # simple-knn
-        simple_knn = submodules_dir / "simple-knn"
-        if simple_knn.exists():
-            run_command(["pip", "install", "."], cwd=simple_knn)
     else:
         print("\ngaussian-splatting repository already exists")
+
+    # Always check and install submodules (in case they weren't built before)
+    print("\nChecking submodules...")
+    submodules_dir = gs_dir / "submodules"
+
+    # diff-gaussian-rasterization
+    diff_gauss = submodules_dir / "diff-gaussian-rasterization"
+    if diff_gauss.exists():
+        print("Installing diff-gaussian-rasterization...")
+        run_command(["pip", "install", "."], cwd=diff_gauss)
+    else:
+        print("Warning: diff-gaussian-rasterization submodule not found")
+
+    # simple-knn
+    simple_knn = submodules_dir / "simple-knn"
+    if simple_knn.exists():
+        print("Installing simple-knn...")
+        run_command(["pip", "install", "."], cwd=simple_knn)
+    else:
+        print("Warning: simple-knn submodule not found")
 
     return gs_dir
 
